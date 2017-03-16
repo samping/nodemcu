@@ -1,41 +1,6 @@
 -- init.lua
 temperature = require("ds18b20")
----------------------------------------
----LED MODULE
-
-IO_BLINK = 4
-TMR_BLINK = 5
-gpio.mode(IO_BLINK, gpio.OUTPUT)
-
-blink = nil
-tmr.register(TMR_BLINK, 100, tmr.ALARM_AUTO, function()
-    gpio.write(IO_BLINK, blink.i % 2)
-    tmr.interval(TMR_BLINK, blink[blink.i + 1])
-    blink.i = (blink.i + 1) % #blink
-end)
-
-function blinking(param)
-    if type(param) == 'table' then
-        blink = param
-        blink.i = 0
-        tmr.interval(TMR_BLINK, 1)
-        running, _ = tmr.state(TMR_BLINK)
-        if running ~= true then
-            tmr.start(TMR_BLINK)
-        end
-    else
-        tmr.stop(TMR_BLINK)
-        gpio.write(IO_BLINK, param or gpio.LOW)
-    end
-end
-
--- blinking({300, 300}) -- 循环闪烁：亮300ms，灭300ms
--- blinking({100, 100 , 100, 500}) -- 循环闪烁：亮100ms，灭100ms，亮100ms，灭500ms
-
--- blinking() -- 常亮
--- blinking(gpio.LOW) -- 常亮
--- blinking(gpio.HIGH) -- 常灭
-
+led         = require("led")
 ------------------------------------
 -- ESP-01 GPIO Mapping
 -- sensor MODULE
@@ -56,15 +21,19 @@ print('Setting up WIFI...')
 wifi.setmode(wifi.STATION)
 wifi.sta.config('CMPP_HUAWEI_4G', 'CMPP8888@')
 wifi.sta.connect()
+wifi.sta.autoconnect(1)
 
-local  mqtt = mqtt.Client("4929385", 900, "82265", "zMaR1lCBXzzKis5W6=Gq3Gpwnl4=")
+local  mqtt = mqtt.Client("4929385", 120, "82265", "zMaR1lCBXzzKis5W6=Gq3Gpwnl4=")
 -- setup Last Will and Testament (optional)
 -- Broker will publish a message with qos = 0, retain = 0, data = "offline" 
 -- to topic "/lwt" if client don't send keepalive packet
 mqtt:lwt("/lwt", "offline", 0, 0)
 
 -- mqtt:on("connect", function(client) print ("connected 2") end)
-mqtt:on("offline", function(client) print ("offline") end)
+mqtt:on("offline", function(client) 
+    print ("offline") 
+    led.blinking({300, 300})
+  end)
 
 -- on publish message receive event
 mqtt:on("message", function(client, topic, data) 
@@ -106,14 +75,14 @@ end
 local onConnect  = function (client)
 	-- body
 	print("connected ")
-  blinking({300, 3000})
+  led.blinking({300, 3000})
   sendData()
 end
 
 local onFailed = function (client, reason)
   -- body
   print("failed reason: "..reason)
-  blinking({300, 300})
+  led.blinking({300, 300})
 end
 
 function startDaemon()
