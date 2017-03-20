@@ -1,11 +1,23 @@
 -- init.lua
 temperature = require("ds18b20")
 led         = require("led")
+local msg   = ''
+
+
 ------------------------------------
 -- ESP-01 GPIO Mapping
 -- sensor MODULE
 
 gpio2 = 4
+IO_BTN_CFG = 10
+
+
+
+function onBtnEvent()
+    print('up~')
+end
+
+
 temperature.setup(gpio2)
 addrs = temperature.addrs()
 if (addrs ~= nil) then
@@ -13,8 +25,8 @@ if (addrs ~= nil) then
 end
 
 
------------------------------------------
 
+-----------------------------------------
 
 
 print('Setting up WIFI...')
@@ -32,7 +44,10 @@ mqtt:lwt("/lwt", "offline", 0, 0)
 -- mqtt:on("connect", function(client) print ("connected 2") end)
 mqtt:on("offline", function(client) 
     print ("offline") 
+    msg = 'offline'
     led.blinking({300, 300})
+    mqtt:connect("183.230.40.39", 6002, 0, onConnect, onFailed)
+    print('start mqtt connect')
   end)
 
 -- on publish message receive event
@@ -75,6 +90,7 @@ end
 local onConnect  = function (client)
 	-- body
 	print("connected ")
+  msg = 'connected'
   led.blinking({300, 3000})
   sendData()
 end
@@ -82,6 +98,7 @@ end
 local onFailed = function (client, reason)
   -- body
   print("failed reason: "..reason)
+  msg = 'failed reason ' .. reason
   led.blinking({300, 300})
 end
 
@@ -104,3 +121,10 @@ tmr.alarm(1, 1000, tmr.ALARM_AUTO, function()
         startDaemon()
     end
 end)
+
+tmr.alarm(4,5000,tmr.ALARM_AUTO,function ()
+        -- body
+       print('msg :' .. msg)
+      end)
+-- gpio.mode(IO_BTN_CFG, gpio.INT,gpio.PULLUP)
+-- gpio.trig(IO_BTN_CFG, 'low', onBtnEvent)
