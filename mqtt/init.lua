@@ -27,8 +27,10 @@ mqtt:subscribe("$creq",0, function(conn) print("subscribe success") end)
 local onConnect  = function (client)
 	-- body
 	 print("connected 1")
-	 local payload = string.char(0x03, 0x00, 0x0B,0x7B,0x22,0x74,0x65,0x73,0x74,0x22,0x3A,0x31,0x32,0x7D)
-	 mqtt:publish('$dp', payload, 0, 0, function(client)
+	local payload = string.char(0x7B,0x22,0x74,0x65,0x73,0x74,0x22,0x3A,0x31,0x32,0x7D)
+  local prefix = string.char(0x03,0x00,0x0B)
+  local load = prefix .. '{"test":13}'
+	 mqtt:publish('$dp', load, 0, 0, function(client)
 	 	print("sent")
 	 	end)
 end
