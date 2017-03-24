@@ -6,7 +6,8 @@ local msg   = ''
 local tem   = ''
 local time  = ''
 local set   = ''
-
+local mqttConnected = false
+local isHeat = false
 ------------------
 --读温度配置
 ------------------
@@ -133,35 +134,67 @@ mqtt:subscribe("$creq",0, function(conn) print("subscribe success") end)
 
 function sendData()
   -- body
-  local i = 0 ;
   local value = 0;
-  tmr.alarm(3, 1000, tmr.ALARM_AUTO, function()
-        if(i>2)then
-          value = temperature.read()
-          tem   = '' .. value .. ' C'
-          local payload = '{"temperature":'.. value .. '}'
-          local size  = string.len(payload)
-          print(size)
-          local prefix = string.char(0x03,0x00,size)
-          local load = prefix .. payload
-           -- Just read temperature
-          print(payload)
-          print(load)
-          mqtt:publish('$dp', load, 0, 0, function(client)
-          print("sent")
-            end)
-          tmr.stop(3)
-        else
-          i = i +1
-          value = temperature.read()
-        end
+  value = temperature.read()
+  tem   = '' .. value .. ' C'
+  local payload = '{"temperature":'.. value .. '}'
+  local size  = string.len(payload)
+  print(size)
+  local prefix = string.char(0x03,0x00,size)
+  local load = prefix .. payload
+   -- Just read temperature
+  print(payload)
+  print(load)
+  mqtt:publish('$dp', load, 0, 0, function(client)
+  print("sent")
     end)
+end
+
+function sendState(str)
+  -- body
+  if(str == 'heatOn')then
+    if(isHeat == false)then
+      isHeat = true
+      if(mqttConnected == true)then
+        local payload = '{"state":1 }'
+        local size  = string.len(payload)
+        print(size)
+        local prefix = string.char(0x03,0x00,size)
+        local load = prefix .. payload
+         -- Just read temperature
+        print(payload)
+        print(load)
+        mqtt:publish('$dp', load, 0, 0, function(client)
+        print("sent")
+          end)
+      end
+    end
+  else
+    if(isHeat == true)then
+      isHeat = false
+      if(mqttConnected == true)then
+        local payload = '{"state":0 }'
+        local size  = string.len(payload)
+        print(size)
+        local prefix = string.char(0x03,0x00,size)
+        local load = prefix .. payload
+         -- Just read temperature
+        print(payload)
+        print(load)
+        mqtt:publish('$dp', load, 0, 0, function(client)
+        print("sent")
+          end)
+      end
+    end
+  end
+
 end
 
 local onConnect  = function (client)
 	-- body
 	print("connected ")
   msg = 'connected'
+  mqttConnected = true
   led.blinking({300, 3000})
   sendData()
 end
@@ -170,6 +203,7 @@ local onFailed = function (client, reason)
   -- body
   print("failed reason: "..reason)
   msg = 'failed reason ' .. reason
+  mqttConnected = false
   led.blinking({300, 300})
 end
 
@@ -210,13 +244,13 @@ tmr.alarm(4,5000,tmr.ALARM_AUTO,function ()
        local value = temperature.read()
        if(value ~= nil)then
         tem   = '' .. value .. ' C'
-          if(value<MixTem)then
-          -- print('add hot')
+        if(value<MixTem)then
+          sendState('heatOn') 
           gpio.write(IO_HOT, gpio.LOW)
-         else
-          -- print('stop hot')
+        else
+          sendState('heatOff')
           gpio.write(IO_HOT, gpio.HIGH)
-         end
+        end
        end
        print_OLED(msg,tem,time)
       end)
