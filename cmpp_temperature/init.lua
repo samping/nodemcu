@@ -208,13 +208,15 @@ tmr.alarm(4,5000,tmr.ALARM_AUTO,function ()
        tm = rtctime.epoch2cal(rtctime.get())
        time =  (tm["hour"] +8) .. ':' .. tm["min"] .. ':' .. tm["sec"] .. '  ' .. tm["year"] .. '/' .. tm["mon"] .. '/' .. tm["day"]
        local value = temperature.read()
-       tem   = '' .. value .. ' C'
-       if(value<MixTem)then
-        -- print('add hot')
-        gpio.write(IO_HOT, gpio.LOW)
-       else
-        -- print('stop hot')
-        gpio.write(IO_HOT, gpio.HIGH)
+       if(value ~= nil)then
+        tem   = '' .. value .. ' C'
+          if(value<MixTem)then
+          -- print('add hot')
+          gpio.write(IO_HOT, gpio.LOW)
+         else
+          -- print('stop hot')
+          gpio.write(IO_HOT, gpio.HIGH)
+         end
        end
        print_OLED(msg,tem,time)
       end)
