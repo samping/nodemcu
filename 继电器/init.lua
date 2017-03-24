@@ -1,4 +1,4 @@
-IO_BTN_CFG = 1
+IO_BTN_CFG = 3
 
 print('hsp')
 local change = true

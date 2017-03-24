@@ -1,4 +1,4 @@
-buttonpin = 5
+buttonpin = 2
 gpio.mode(buttonpin, gpio.OUTPUT)
 gpio.write(buttonpin,gpio.HIGH)
 -- gpio.mode(buttonpin, gpio.INPUT)
